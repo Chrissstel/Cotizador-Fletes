@@ -38,21 +38,26 @@ const IconClock = () => (
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
+const IconBolt = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
 
 // ─── SAMPLE DATA ────────────────────────────────────────────────────────────
 const SAMPLE_DATA = [
-  { origen: "Los Angeles, CA", destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_ton: 85, transit_days: 4 },
-  { origen: "Los Angeles, CA", destino: "Monterrey, NL", proveedor: "Logística Norteña", precio_ton: 92, transit_days: 3 },
-  { origen: "Los Angeles, CA", destino: "Monterrey, NL", proveedor: "FletEx Premium", precio_ton: 78, transit_days: 6 },
-  { origen: "Houston, TX", destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_ton: 55, transit_days: 2 },
-  { origen: "Houston, TX", destino: "Monterrey, NL", proveedor: "Border Express", precio_ton: 48, transit_days: 3 },
-  { origen: "Houston, TX", destino: "Monterrey, NL", proveedor: "Logística Norteña", precio_ton: 62, transit_days: 1 },
-  { origen: "Dallas, TX", destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_ton: 60, transit_days: 2 },
-  { origen: "Dallas, TX", destino: "Monterrey, NL", proveedor: "Border Express", precio_ton: 53, transit_days: 3 },
-  { origen: "Chicago, IL", destino: "Monterrey, NL", proveedor: "FletEx Premium", precio_ton: 110, transit_days: 5 },
-  { origen: "Chicago, IL", destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_ton: 125, transit_days: 4 },
-  { origen: "Miami, FL", destino: "Monterrey, NL", proveedor: "Logística Norteña", precio_ton: 140, transit_days: 6 },
-  { origen: "Miami, FL", destino: "Monterrey, NL", proveedor: "FletEx Premium", precio_ton: 130, transit_days: 7 },
+  { origen: "Los Angeles, CA", destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_kg: 0.085, transit_days: 4, precio_kg_team: 0.105, transit_days_team: 2 },
+  { origen: "Los Angeles, CA", destino: "Monterrey, NL", proveedor: "Logística Norteña",    precio_kg: 0.092, transit_days: 3, precio_kg_team: 0.115, transit_days_team: 2 },
+  { origen: "Los Angeles, CA", destino: "Monterrey, NL", proveedor: "FletEx Premium",       precio_kg: 0.078, transit_days: 6, precio_kg_team: 0.098, transit_days_team: 3 },
+  { origen: "Houston, TX",     destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_kg: 0.055, transit_days: 2, precio_kg_team: 0.072, transit_days_team: 1 },
+  { origen: "Houston, TX",     destino: "Monterrey, NL", proveedor: "Border Express",       precio_kg: 0.048, transit_days: 3, precio_kg_team: 0.065, transit_days_team: 1 },
+  { origen: "Houston, TX",     destino: "Monterrey, NL", proveedor: "Logística Norteña",    precio_kg: 0.062, transit_days: 1, precio_kg_team: 0.080, transit_days_team: 1 },
+  { origen: "Dallas, TX",      destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_kg: 0.060, transit_days: 2, precio_kg_team: 0.078, transit_days_team: 1 },
+  { origen: "Dallas, TX",      destino: "Monterrey, NL", proveedor: "Border Express",       precio_kg: 0.053, transit_days: 3, precio_kg_team: 0.070, transit_days_team: 1 },
+  { origen: "Chicago, IL",     destino: "Monterrey, NL", proveedor: "FletEx Premium",       precio_kg: 0.110, transit_days: 5, precio_kg_team: 0.135, transit_days_team: 3 },
+  { origen: "Chicago, IL",     destino: "Monterrey, NL", proveedor: "Trans Continental MX", precio_kg: 0.125, transit_days: 4, precio_kg_team: 0.150, transit_days_team: 2 },
+  { origen: "Miami, FL",       destino: "Monterrey, NL", proveedor: "Logística Norteña",    precio_kg: 0.140, transit_days: 6, precio_kg_team: 0.170, transit_days_team: 3 },
+  { origen: "Miami, FL",       destino: "Monterrey, NL", proveedor: "FletEx Premium",       precio_kg: 0.130, transit_days: 7, precio_kg_team: 0.158, transit_days_team: 4 },
 ];
 
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
@@ -61,7 +66,9 @@ export default function App() {
   const [dragging, setDragging] = useState(false);
   const [origen, setOrigen] = useState("");
   const [destino, setDestino] = useState("");
-  const [toneladas, setToneladas] = useState("");
+  const [peso, setPeso] = useState("");
+  const [unidad, setUnidad] = useState("libras"); // "libras" o "kilos"
+  const [ordenar, setOrdenar] = useState("costo"); // "costo" o "dias"
   const [searched, setSearched] = useState(false);
   const [usingSample, setUsingSample] = useState(false);
 
@@ -85,7 +92,7 @@ export default function App() {
       setSearched(false);
       setOrigen("");
       setDestino("");
-      setToneladas("");
+      setPeso("");
     };
     reader.readAsArrayBuffer(file);
   }, []);
@@ -106,7 +113,7 @@ export default function App() {
     setSearched(false);
     setOrigen("");
     setDestino("");
-    setToneladas("");
+    setPeso("");
   };
 
   const activeData = data || [];
@@ -121,19 +128,45 @@ export default function App() {
   );
 
   const results = useMemo(() => {
-    if (!searched || !origen || !destino || !toneladas) return [];
-    const tons = parseFloat(toneladas);
-    return activeData
+    if (!searched || !origen || !destino || !peso) return [];
+    const pesoValue = parseFloat(peso);
+    // Convertir a kilos: 1 libra = 0.453592 kg
+    const kilos = unidad === "libras" ? pesoValue * 0.453592 : pesoValue;
+    const filas = [];
+    activeData
       .filter((r) => r.origen === origen && r.destino === destino)
-      .map((r) => ({
-        ...r,
-        total: (r.precio_ton || 0) * tons,
-      }))
-      .sort((a, b) => a.total - b.total);
-  }, [searched, origen, destino, toneladas, activeData]);
+      .forEach((r) => {
+        // Opción normal
+        filas.push({
+          ...r,
+          isTeam: false,
+          precioUsado: r.precio_kg || 0,
+          diasUsados: r.transit_days || null,
+          total: (r.precio_kg || 0) * kilos,
+        });
+        // Opción TEAM (solo si tiene precio_kg_team)
+        if (r.precio_kg_team) {
+          filas.push({
+            ...r,
+            isTeam: true,
+            precioUsado: r.precio_kg_team,
+            diasUsados: r.transit_days_team || null,
+            total: r.precio_kg_team * kilos,
+          });
+        }
+      });
+    return filas.sort((a, b) => {
+      if (ordenar === "dias") {
+        const dA = a.diasUsados ?? 9999;
+        const dB = b.diasUsados ?? 9999;
+        return dA !== dB ? dA - dB : a.total - b.total;
+      }
+      return a.total - b.total;
+    });
+  }, [searched, origen, destino, peso, unidad, ordenar, activeData]);
 
   const handleSearch = () => {
-    if (origen && destino && toneladas) setSearched(true);
+    if (origen && destino && peso) setSearched(true);
   };
 
   return (
@@ -211,11 +244,13 @@ export default function App() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {[
-                  ["origen", "Ciudad de origen (ej: Houston, TX)"],
-                  ["destino", "Ciudad destino (ej: Monterrey, NL)"],
-                  ["proveedor", "Nombre del agente / empresa"],
-                  ["precio_ton", "Precio por tonelada en USD"],
-                  ["transit_days", "Días de tránsito (opcional)"],
+                  ["origen",          "Ciudad de origen (ej: Houston, TX)"],
+                  ["destino",         "Ciudad destino (ej: Monterrey, NL)"],
+                  ["proveedor",       "Nombre del agente / empresa"],
+                  ["precio_kg",       "Precio normal por kilogramo en USD"],
+                  ["transit_days",    "Días de tránsito normal (opcional)"],
+                  ["precio_kg_team",  "Precio TEAM por kilogramo en USD (opcional)"],
+                  ["transit_days_team", "Días de tránsito TEAM (opcional)"],
                 ].map(([col, desc]) => (
                   <div key={col} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                     <code style={{ color: "#4a5fc1", fontSize: 14, whiteSpace: "nowrap", minWidth: 100 }}>{col}</code>
@@ -258,7 +293,7 @@ export default function App() {
                 <div>
                   <label style={{ display: "block", fontSize: 13, letterSpacing: 2, color: "#666", marginBottom: 8, textTransform: "uppercase" }}>Origen</label>
                   <select value={origen} onChange={(e) => { setOrigen(e.target.value); setSearched(false); }}
-                    style={{ width: "100%", background: "#fff", border: "1px solid #999", borderRadius: 2, color: origen ? "#1a1a1a" : "#999", padding: "12px 14px", fontSize: 16, fontFamily: "inherit" }}>
+                    style={{ width: "100%", background: "#fff", border: "1px solid #999", borderRadius: 2, color: origen ? "#1a1a1a" : "#999", padding: "12px 14px", fontSize: 16, fontFamily: "system-ui, Arial, sans-serif" }}>
                     <option value="">Seleccionar...</option>
                     {origenes.map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
@@ -271,35 +306,45 @@ export default function App() {
                 <div>
                   <label style={{ display: "block", fontSize: 13, letterSpacing: 2, color: "#666", marginBottom: 8, textTransform: "uppercase" }}>Destino</label>
                   <select value={destino} onChange={(e) => { setDestino(e.target.value); setSearched(false); }}
-                    style={{ width: "100%", background: "#fff", border: "1px solid #999", borderRadius: 2, color: destino ? "#1a1a1a" : "#999", padding: "12px 14px", fontSize: 16, fontFamily: "inherit" }}>
+                    style={{ width: "100%", background: "#fff", border: "1px solid #999", borderRadius: 2, color: destino ? "#1a1a1a" : "#999", padding: "12px 14px", fontSize: 16, fontFamily: "system-ui, Arial, sans-serif" }}>
                     <option value="">Seleccionar...</option>
                     {destinos.map((d) => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
 
-                {/* Tons */}
-                <div>
-                  <label style={{ display: "block", fontSize: 13, letterSpacing: 2, color: "#666", marginBottom: 8, textTransform: "uppercase" }}>Toneladas</label>
-                  <input
-                    type="number" min="0.1" step="0.1" value={toneladas}
-                    onChange={(e) => { setToneladas(e.target.value); setSearched(false); }}
-                    placeholder="0.0"
-                    style={{ width: "80px", background: "#fff", border: "1px solid #999", borderRadius: 2, color: "#1a1a1a", padding: "12px 14px", fontSize: 16, fontFamily: "inherit" }}
-                  />
+                {/* Peso y Unidad */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, letterSpacing: 2, color: "#666", marginBottom: 8, textTransform: "uppercase" }}>Peso</label>
+                    <input
+                      type="number" min="0.1" step="0.1" value={peso}
+                      onChange={(e) => { setPeso(e.target.value); setSearched(false); }}
+                      placeholder="0.0"
+                      style={{ width: "100px", background: "#fff", border: "1px solid #999", borderRadius: 2, color: "#1a1a1a", padding: "12px 14px", fontSize: 16, fontFamily: "system-ui, Arial, sans-serif" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, letterSpacing: 2, color: "#666", marginBottom: 8, textTransform: "uppercase" }}>Unidad</label>
+                    <select value={unidad} onChange={(e) => { setUnidad(e.target.value); setSearched(false); }}
+                      style={{ width: "100%", background: "#fff", border: "1px solid #999", borderRadius: 2, color: "#1a1a1a", padding: "12px 14px", fontSize: 16, fontFamily: "system-ui, Arial, sans-serif" }}>
+                      <option value="libras">Libras</option>
+                      <option value="kilos">Kilos</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
               <button
                 onClick={handleSearch}
-                disabled={!origen || !destino || !toneladas}
+                disabled={!origen || !destino || !peso}
                 style={{
                   marginTop: 24,
                   padding: "14px 40px",
-                  background: (!origen || !destino || !toneladas) ? "#ccc" : "#4a5fc1",
-                  color: (!origen || !destino || !toneladas) ? "#999" : "#fff",
+                  background: (!origen || !destino || !peso) ? "#ccc" : "#4a5fc1",
+                  color: (!origen || !destino || !peso) ? "#999" : "#fff",
                   border: "none", borderRadius: 2,
                   fontSize: 15, fontWeight: "bold", letterSpacing: 3,
-                  textTransform: "uppercase", cursor: (!origen || !destino || !toneladas) ? "not-allowed" : "pointer",
+                  textTransform: "uppercase", cursor: (!origen || !destino || !peso) ? "not-allowed" : "pointer",
                   transition: "all 0.2s",
                   fontFamily: "inherit",
                 }}
@@ -317,14 +362,43 @@ export default function App() {
                   </div>
                 ) : (
                   <div>
-                    <div style={{ fontSize: 14, letterSpacing: 3, color: "#666", textTransform: "uppercase", marginBottom: 16 }}>
-                      {results.length} opciones encontradas — ordenadas por costo
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div style={{ fontSize: 14, letterSpacing: 3, color: "#666", textTransform: "uppercase" }}>
+                        {results.length} opciones encontradas
+                      </div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        <span style={{ fontSize: 12, color: "#999", letterSpacing: 1, marginRight: 4 }}>ORDENAR:</span>
+                        <button
+                          onClick={() => setOrdenar("costo")}
+                          style={{
+                            padding: "6px 16px", borderRadius: 3, fontSize: 13, fontWeight: "bold", cursor: "pointer",
+                            border: `2px solid ${ordenar === "costo" ? "#4a5fc1" : "#ccc"}`,
+                            background: ordenar === "costo" ? "#4a5fc1" : "#fff",
+                            color: ordenar === "costo" ? "#fff" : "#666",
+                            transition: "all 0.15s", fontFamily: "inherit",
+                          }}
+                        >
+                          💲 Costo
+                        </button>
+                        <button
+                          onClick={() => setOrdenar("dias")}
+                          style={{
+                            padding: "6px 16px", borderRadius: 3, fontSize: 13, fontWeight: "bold", cursor: "pointer",
+                            border: `2px solid ${ordenar === "dias" ? "#4a5fc1" : "#ccc"}`,
+                            background: ordenar === "dias" ? "#4a5fc1" : "#fff",
+                            color: ordenar === "dias" ? "#fff" : "#666",
+                            transition: "all 0.15s", fontFamily: "inherit",
+                          }}
+                        >
+                          ⏱ Tránsito
+                        </button>
+                      </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {results.map((r, i) => (
                         <div key={i} style={{
-                          background: i === 0 ? "#e3f2fd" : "#f5f5f5",
-                          border: `1px solid ${i === 0 ? "#4a5fc1" : "#ccc"}`,
+                          background: i === 0 ? "#e3f2fd" : r.isTeam ? "#fff8e1" : "#f5f5f5",
+                          border: `1px solid ${i === 0 ? "#4a5fc1" : r.isTeam ? "#f0a500" : "#ccc"}`,
                           borderRadius: 4,
                           padding: "20px 24px",
                           display: "grid",
@@ -336,9 +410,9 @@ export default function App() {
                           {/* Rank badge */}
                           <div style={{
                             width: 36, height: 36, borderRadius: "50%",
-                            background: i === 0 ? "#4a5fc1" : "#ddd",
+                            background: i === 0 ? "#4a5fc1" : r.isTeam ? "#f0a500" : "#ddd",
                             display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 15, fontWeight: "bold", color: i === 0 ? "#fff" : "#666",
+                            fontSize: 15, fontWeight: "bold", color: i === 0 || r.isTeam ? "#fff" : "#666",
                             flexShrink: 0,
                           }}>
                             {i + 1}
@@ -350,6 +424,11 @@ export default function App() {
                               <span style={{ fontSize: 18, color: "#1a1a1a", fontWeight: i === 0 ? "bold" : "normal" }}>
                                 {r.proveedor || "Sin nombre"}
                               </span>
+                              {r.isTeam && (
+                                <span style={{ display: "flex", alignItems: "center", gap: 3, background: "#f0a500", color: "#fff", fontSize: 11, fontWeight: "bold", letterSpacing: 1, padding: "2px 8px", borderRadius: 3 }}>
+                                  <IconBolt /> TEAM
+                                </span>
+                              )}
                               {i === 0 && (
                                 <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#4a5fc1", fontSize: 13, letterSpacing: 1, fontWeight: "bold" }}>
                                   <IconStar /> MEJOR PRECIO
@@ -364,11 +443,11 @@ export default function App() {
                           </div>
 
                           {/* Transit time */}
-                          {r.transit_days && (
+                          {r.diasUsados && (
                             <div style={{ textAlign: "center" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#666", fontSize: 15, justifyContent: "center" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 5, color: r.isTeam ? "#f0a500" : "#666", fontSize: 15, justifyContent: "center" }}>
                                 <IconClock />
-                                <span>{r.transit_days} {r.transit_days === 1 ? "día" : "días"}</span>
+                                <span>{r.diasUsados} {r.diasUsados === 1 ? "día" : "días"}</span>
                               </div>
                               <div style={{ fontSize: 13, color: "#999", letterSpacing: 1, marginTop: 2 }}>TRÁNSITO</div>
                             </div>
@@ -376,11 +455,11 @@ export default function App() {
 
                           {/* Prices */}
                           <div style={{ textAlign: "right" }}>
-                            <div style={{ fontSize: 24, fontWeight: "bold", color: i === 0 ? "#4a5fc1" : "#1a1a1a" }}>
+                            <div style={{ fontSize: 24, fontWeight: "bold", color: i === 0 ? "#4a5fc1" : r.isTeam ? "#f0a500" : "#1a1a1a" }}>
                               {fmt(r.total)}
                             </div>
                             <div style={{ fontSize: 14, color: "#666", marginTop: 2 }}>
-                              {fmt(r.precio_ton)} / ton · {toneladas} ton
+                              {fmt(r.precioUsado)} / kg · {peso} {unidad}
                             </div>
                           </div>
                         </div>
